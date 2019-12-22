@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import rotary_dial
+import rotarydial
 import threading
 import queue
 import logging
@@ -17,7 +17,7 @@ if __name__ == '__main__':
     logger = config_logging()
     logger.info("Application started")
     queue = queue.Queue()
-    rotary_dial_thread = threading.Thread(target=rotary_dial.collect_number, args=(queue,))
+    rotary_dial_thread = threading.Thread(target=rotarydial.collect_number, args=(queue,))
     rotary_dial_thread.start()
     logger.info("Rotary dial thread started")
     while True:
