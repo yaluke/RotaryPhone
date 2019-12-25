@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import rotarydial
+import gsmmodem
 import threading
 import queue
 import logging
@@ -16,6 +17,7 @@ def config_logging():
 if __name__ == '__main__':
     logger = config_logging()
     logger.info("Application started")
+    gsm_modem = gsmmodem.GsmModem('1111')
     queue = queue.Queue()
     rotary_dial_thread = threading.Thread(target=rotarydial.collect_number, args=(queue,))
     rotary_dial_thread.start()
@@ -24,4 +26,5 @@ if __name__ == '__main__':
         msg = queue.get()
         logger.info(f"Message received: {msg}")
         print(f"Received number to call: {msg}")
+        gsm_modem.call(msg)
 
