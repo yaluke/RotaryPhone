@@ -26,5 +26,8 @@ if __name__ == '__main__':
         msg = queue.get()
         logger.info(f"Message received: {msg}")
         print(f"Received number to call: {msg}")
-        gsm_modem.call(msg)
+        if len(msg) > 1:
+            gsm_modem.call(msg)
+        else:
+            gsm_modem.disconnect()
 

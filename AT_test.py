@@ -11,5 +11,8 @@ while True:
 	cmd += '\r\n'
 	ser.write(cmd.encode('utf-8'))
 	print("="*40)
-	print(ser.read(128).decode('utf-8'))
+	ret = ser.read(256).decode('utf-8')
+	print(len(ret))
+	print(type(ret))
+	print(ret)
 	print("="*40)
