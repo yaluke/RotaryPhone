@@ -9,11 +9,13 @@ import time
 import queue
 import logging
 
+handset_pin = 13
 rotary_dial_pin = 6
 bounce_time = 30
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(rotary_dial_pin, GPIO.IN)
+GPIO.setup(handset_pin, GPIO.IN)
 
 
 def ticks_to_digit(tick_count):
@@ -56,14 +58,21 @@ def collect_number(queue):
                     tick_count += 1
                 else:
                     # bigger gap means that new digit just started, so previous was finished and can be stored
-                    number += ticks_to_digit(tick_count)
-                    tick_count = 1
+                    # if handset is up
+                    if GPIO.input(handset_pin):
+                        number += ticks_to_digit(tick_count)
+                        tick_count = 1
+                    else:
+                        number = ''
                 start_time = end_time
             else:
-                # last digit is stored after longer gap
-                number += ticks_to_digit(tick_count)
-                logger.info(f"Number to call collected: {number}")
-                queue.put(number)
+                # last digit is stored after longer gap if handset is up
+                if GPIO.input(handset_pin):
+                    number += ticks_to_digit(tick_count)
+                    logger.info(f"Number to call collected: {number}")
+                    queue.put(number)
+                else:
+                    number = ''
 
 
 if __name__ == '__main__':
