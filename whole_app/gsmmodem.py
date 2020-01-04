@@ -28,9 +28,9 @@ class GsmModem:
 
         self.__execute_command('AT+CREG?', 'network registration', ['OK', '+CREG', '+CME ERROR'])
 
-        self.__execute_command('AT+SNFS=0', 'switching to headphones', ['OK'])
+        self.__execute_command('AT+SNFS=1', 'switching to speaker', ['OK'])
 
-        self.__execute_command('AT+CRSL=2', 'setting ring sound level', ['OK', '+CME ERROR'])
+        self.__execute_command('AT+CRSL=8', 'setting ring sound level', ['OK', '+CME ERROR'])
 
         self.__serial_data_thread = threading.Thread(target=self.__process_serial_data)
         self.__serial_data_thread.start()
@@ -38,7 +38,11 @@ class GsmModem:
     def __process_serial_data(self):
         while True:
             while self.serial.in_waiting:
-                ret = str(self.serial.readline(), encoding='utf-8').rstrip('\r\n')
+                ret = self.serial.readline()
+                try:
+                    ret = str(ret, encoding='utf-8').rstrip('\r\n')
+                except UnicodeDecodeError as ude:
+                    print(ude)
                 print(ret) if ret else None
             time.sleep(0.1)
 
