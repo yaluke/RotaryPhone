@@ -90,8 +90,8 @@ class GsmModem:
 
     def call(self, number):
         self.serial.write(bytes(f'ATD{number}\r\n'.encode('utf-8')))
-        self.logger.info(f"Calling: {self.serial.read(256).decode('utf-8')}")
+        self.logger.info(f"Calling: {number}")
 
-    def disconnect(self):
-        self.serial.write(b'ATH\r\n')
-        self.logger.info(f"Disconnecting call: {self.serial.read(256).decode('utf-8')}")
+    def execute_command(self, command):
+        self.serial.write(bytes(f'{command}\r\n'.encode('utf-8')))
+        self.logger.info(f"Executing command: {command}")

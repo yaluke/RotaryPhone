@@ -6,7 +6,7 @@ Module responsible for collecting whole dialled number and adding command to msg
 
 import RPi.GPIO as GPIO
 import time
-import queue
+import multiprocessing
 import logging
 
 handset_pin = 13
@@ -76,5 +76,7 @@ def collect_number(queue):
 
 
 if __name__ == '__main__':
-    queue = queue.Queue()
+    logging.basicConfig(filename="rotarydiall.log", style='{', format="{asctime} : {levelname:8} : {name:11} : {message}"
+                        , level=logging.DEBUG)
+    queue = multiprocessing.Queue()
     collect_number(queue)

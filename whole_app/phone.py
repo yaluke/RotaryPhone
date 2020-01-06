@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
 import rotarydial
+import handset
 import gsmmodem
-import threading
-import queue
+import multiprocessing
 import logging
-import logging.handlers
+import configparser
 
 
 def config_logging():
@@ -18,16 +18,35 @@ if __name__ == '__main__':
     logger = config_logging()
     logger.info("Application started")
     gsm_modem = gsmmodem.GsmModem('1111')
-    queue = queue.Queue()
-    rotary_dial_thread = threading.Thread(target=rotarydial.collect_number, args=(queue,))
+
+    shortcuts = dict()
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+    if 'shortcuts' in config.sections():
+        for opt in config.options('shortcuts'):
+            shortcuts[opt] = config.get('shortcuts', opt)
+    logger.info(f'{len(shortcuts)} shortcuts loaded from config.ini file')
+
+    queue = multiprocessing.Queue()
+
+    rotary_dial_thread = multiprocessing.Process(target=rotarydial.collect_number, args=(queue,))
     rotary_dial_thread.start()
-    logger.info("Rotary dial thread started")
+    logger.info("Rotary dial process started")
+
+    handset_thread = multiprocessing.Process(target=handset.handle_handset, args=(queue,))
+    handset_thread.start()
+    logger.info("Handset process started")
+
     while True:
         msg = queue.get()
         logger.info(f"Message received: {msg}")
-        print(f"Received number to call: {msg}")
-        if len(msg) > 1:
-            gsm_modem.call(msg)
+        if msg[0].isnumeric():
+            if len(msg) > 1:
+                gsm_modem.call(msg)
+            else:
+                # find the shortcut and call
+                number = shortcuts.get(msg)
+                if number:
+                    gsm_modem.call(number)
         else:
-            gsm_modem.disconnect()
-
+            gsm_modem.execute_command(msg)
