@@ -3,6 +3,7 @@ import logging
 import time
 import queue
 import threading
+import os
 
 
 class GsmModem:
@@ -35,6 +36,11 @@ class GsmModem:
         self.__serial_data_thread = threading.Thread(target=self.__process_serial_data)
         self.__serial_data_thread.start()
 
+        self.__ring = 0
+
+        self.__ring_thread = threading.Thread(target=self.__ring_loop)
+        self.__ring_thread.start()
+
     def __process_serial_data(self):
         while True:
             while self.serial.in_waiting:
@@ -44,6 +50,18 @@ class GsmModem:
                 except UnicodeDecodeError as ude:
                     print(ude)
                 print(ret) if ret else None
+                if ret.startswith('RING'):
+                    self.__ring = 1
+                elif ret.startswith('ERROR'):
+                    self.__ring = 0
+                elif ret.startswith('CONNECT'):
+                    self.__ring = 0
+            time.sleep(0.1)
+
+    def __ring_loop(self):
+        while True:
+            if self.__ring:
+                os.system('aplay ring_4s.wav')
             time.sleep(0.1)
 
     def __ignition(self):

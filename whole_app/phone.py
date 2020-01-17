@@ -17,6 +17,7 @@ def config_logging():
 if __name__ == '__main__':
     logger = config_logging()
     logger.info("Application started")
+
     gsm_modem = gsmmodem.GsmModem('1111')
 
     shortcuts = dict()

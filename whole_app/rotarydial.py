@@ -9,13 +9,9 @@ import time
 import multiprocessing
 import logging
 
-handset_pin = 13
+handset_pin = 12
 rotary_dial_pin = 6
 bounce_time = 30
-
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(rotary_dial_pin, GPIO.IN)
-GPIO.setup(handset_pin, GPIO.IN)
 
 
 def ticks_to_digit(tick_count):
@@ -42,6 +38,11 @@ def collect_number(queue):
     """
     logger = logging.getLogger(__name__)
     logger.info("Starting collection loop")
+
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(rotary_dial_pin, GPIO.IN)
+    GPIO.setup(handset_pin, GPIO.IN)
+
     while True:
         # wait (forever) for the first tick - no timeout
         channel = GPIO.wait_for_edge(rotary_dial_pin, GPIO.FALLING, bouncetime=bounce_time)
