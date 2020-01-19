@@ -4,6 +4,8 @@ import time
 import queue
 import threading
 import os
+#import smsutil
+import smsforwarder
 
 
 class GsmModem:
@@ -33,13 +35,27 @@ class GsmModem:
 
         self.__execute_command('AT+CRSL=8', 'setting ring sound level', ['OK', '+CME ERROR'])
 
+        # 0 = PDU (default) 1 = text (mmses don't work in text mode)
+        self.__execute_command('AT+CMGF=0', 'Select SMS message format (PDU mode)', ['OK'])
+
+        # <mt> = 2 SMS-DELIVERs are routed directly to the TE using unsolicited result code: +CMT
+        self.__execute_command('AT+CNMI=0,2,0,0,0', 'New SMS message indications', ['OK'])
+
         self.__serial_data_thread = threading.Thread(target=self.__process_serial_data)
         self.__serial_data_thread.start()
 
         self.__ring = 0
+        self.__sms = 0
 
         self.__ring_thread = threading.Thread(target=self.__ring_loop)
         self.__ring_thread.start()
+
+#    def __process_sms(self, sms):
+#        print('Processing SMS')
+#        sms = b'\x41\xE1\x90\x08'
+#        t = smsutil.decode(sms, encoding='utf_8')
+#        print(t)
+#        print('End of processing SMS')
 
     def __process_serial_data(self):
         while True:
@@ -49,13 +65,26 @@ class GsmModem:
                     ret = str(ret, encoding='utf-8').rstrip('\r\n')
                 except UnicodeDecodeError as ude:
                     print(ude)
-                print(ret) if ret else None
+                self.logger.info(f'Received data from GSM modem:  {ret}') if ret else None
                 if ret.startswith('RING'):
                     self.__ring = 1
                 elif ret.startswith('ERROR'):
                     self.__ring = 0
                 elif ret.startswith('CONNECT'):
                     self.__ring = 0
+                elif ret.startswith('+CMT:'):
+                    # next line is a message
+                    ret = self.serial.readline()
+                    try:
+                        ret = str(ret, encoding='utf-8').rstrip('\r\n')
+                    except UnicodeDecodeError as ude:
+                        print(ude)
+                    else:
+                        self.logger.info(f'Received data from GSM modem (SMS):  {ret}')
+                        # new thread is created for every sms
+                        sms_forwarder_thread = threading.Thread(target=smsforwarder.forward_sms, args=(ret,))
+                        sms_forwarder_thread.start()
+
             time.sleep(0.1)
 
     def __ring_loop(self):
