@@ -1,7 +1,9 @@
+#!/usr/bin/env python3
+
 import serial
 import logging
 import time
-import queue
+# import queue
 import threading
 import os
 #import smsutil
@@ -9,9 +11,12 @@ import smsforwarder
 
 
 class GsmModem:
-    def __init__(self, pin):
+    def __init__(self, pin, email_account, email_passwd, email_to):
         self.logger = logging.getLogger(__name__)
-        self.queue = queue.Queue()
+        self.email_account = email_account
+        self.email_passwd = email_passwd
+        self.email_to = email_to
+        # self.queue = queue.Queue()
         self.serial = serial.Serial('/dev/serial0', timeout=1)
         self.logger.info(f"Connected to GSM modem - {self.serial.name if self.serial else 'error!'}")
 
@@ -50,13 +55,6 @@ class GsmModem:
         self.__ring_thread = threading.Thread(target=self.__ring_loop)
         self.__ring_thread.start()
 
-#    def __process_sms(self, sms):
-#        print('Processing SMS')
-#        sms = b'\x41\xE1\x90\x08'
-#        t = smsutil.decode(sms, encoding='utf_8')
-#        print(t)
-#        print('End of processing SMS')
-
     def __process_serial_data(self):
         while True:
             while self.serial.in_waiting:
@@ -64,7 +62,8 @@ class GsmModem:
                 try:
                     ret = str(ret, encoding='utf-8').rstrip('\r\n')
                 except UnicodeDecodeError as ude:
-                    print(ude)
+                    self.logger.info(f"Exception handled, received data: {ret}, exception: {ude}")
+                    ret = ''
                 self.logger.info(f'Received data from GSM modem:  {ret}') if ret else None
                 if ret.startswith('RING'):
                     self.__ring = 1
@@ -82,7 +81,8 @@ class GsmModem:
                     else:
                         self.logger.info(f'Received data from GSM modem (SMS):  {ret}')
                         # new thread is created for every sms
-                        sms_forwarder_thread = threading.Thread(target=smsforwarder.forward_sms, args=(ret,))
+                        sms_forwarder_thread = threading.Thread(target=smsforwarder.forward_sms
+                                                    , args=(ret, self.email_account, self.email_passwd, self.email_to))
                         sms_forwarder_thread.start()
 
             time.sleep(0.1)
@@ -112,7 +112,8 @@ class GsmModem:
                 elif ret == 'OK':
                     res_ok = True
                 elif ret:
-                    self.queue.put(ret)
+                    pass
+                    # self.queue.put(ret)
         self.logger.info(f'Executing AT command - done after {tries} tries')
 
     def __execute_command(self, command, description, expected_responses):
@@ -131,7 +132,8 @@ class GsmModem:
                     if ret.startswith(exp_resp):
                         found = True
             if not found and ret:
-                self.queue.put(ret)
+                pass
+                # self.queue.put(ret)
 
         self.logger.info(f"Executing command {command} - done")
 

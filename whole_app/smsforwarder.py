@@ -6,13 +6,29 @@ Module responsible for decoding sms in PDU format and forwarding it to e-mail ad
 
 import logging
 import smspdu.easy
+import smtplib
+import ssl
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
-def forward_sms(sms):
+def forward_sms(sms, email_account, email_passwd, email_to):
     logger = logging.getLogger(__name__)
     logger.info('Decoding and forwarding SMS')
     res = smspdu.easy.easy_sms(sms)
     logger.info(f"SMS details: sender: {res['sender']}, date: {res['date']}, content: {res['content']}"
                 f", partial: {res['partial']}")
+
+    message = MIMEMultipart("alternative")
+    message["Subject"] = "New SMS received on 48608394953"
+    message["From"] = email_account
+    message["To"] = email_to
+    message.attach(MIMEText(f"From: {res['sender']}\nDate: {res['date']}\n\n{res['content']}","plain"))
+
+    context = ssl.create_default_context()
+    with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=context) as server:
+        server.login(email_account, email_passwd)
+        server.sendmail(email_account, email_to, message.as_string())
+        # server.sendmail(email_account, email_to, f"Subject: New SMS received on 48608394953\n\nFrom: {res['sender']}\nDate: {res['date']}\n\n{res['content']}")
 
 if __name__ == '__main__':
     logging.basicConfig(filename="smsforwarder.log", style='{',

@@ -18,15 +18,28 @@ if __name__ == '__main__':
     logger = config_logging()
     logger.info("Application started")
 
-    gsm_modem = gsmmodem.GsmModem('1111')
-
     shortcuts = dict()
     config = configparser.ConfigParser()
     config.read('config.ini')
+    email_account = ''
+    email_passwd = ''
+    email_to = ''
     if 'shortcuts' in config.sections():
         for opt in config.options('shortcuts'):
             shortcuts[opt] = config.get('shortcuts', opt)
-    logger.info(f'{len(shortcuts)} shortcuts loaded from config.ini file')
+        logger.info(f'{len(shortcuts)} shortcuts loaded from config.ini file')
+
+    if 'smsforward' in config.sections():
+        for opt in config.options('smsforward'):
+            if opt == 'email_account':
+                email_account = config.get('smsforward', opt)
+            elif opt == 'email_passwd':
+                email_passwd = config.get('smsforward', opt)
+            elif opt == 'email_to':
+                email_to = config.get('smsforward', opt)
+        logger.info('Forward sms data loaded from config.ini file')
+
+    gsm_modem = gsmmodem.GsmModem('1111', email_account, email_passwd, email_to)
 
     queue = multiprocessing.Queue()
 
